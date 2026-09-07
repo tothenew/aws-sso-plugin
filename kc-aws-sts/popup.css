@@ -1,0 +1,290 @@
+:root {
+  /* TO THE NEW */
+  --magenta: #D80C78;
+  --magenta-deep: #A8095E;
+  --magenta-wash: #FDF1F7;
+  --indigo: #303090;
+
+  --paper: #FFFFFF;
+  --canvas: #F6F6F8;
+  --line: #E6E6EC;
+  --line-soft: #F0F0F4;
+  --text: #16161D;
+  --muted: #70707E;
+  --error: #E4183C;
+
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, monospace;
+  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 404px;
+  margin: 0;
+  padding: 0 0 12px;
+  background: var(--canvas);
+  color: var(--text);
+  font: 13px/1.45 var(--ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------------- header */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.brand .txt { min-width: 0; }
+
+.eyebrow {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--magenta);
+}
+
+h1 {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- buttons */
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--magenta);
+  outline-offset: 1px;
+}
+
+.ghost {
+  flex: none;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+.ghost:hover { color: var(--magenta); border-color: var(--magenta); }
+
+.copy, .reveal {
+  flex: none;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+}
+.copy:hover, .reveal:hover {
+  color: var(--magenta);
+  background: var(--magenta-wash);
+}
+
+.solid {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--paper);
+  background: var(--magenta);
+  border: 1px solid var(--magenta);
+}
+.solid:hover { background: var(--magenta-deep); border-color: var(--magenta-deep); }
+
+.solid.alt {
+  color: var(--magenta);
+  background: var(--paper);
+}
+.solid.alt:hover { background: var(--magenta-wash); color: var(--magenta-deep); }
+
+/* ---------------------------------------------------------------- card */
+
+main { padding: 12px 12px 0; }
+
+.card {
+  padding: 13px 14px 14px;
+  margin-bottom: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 11px;
+}
+
+.role {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+/* Expiry is the one fact that matters most about a temporary credential,
+   so it carries the brand accent. */
+.life {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+
+.track {
+  flex: 1;
+  height: 3px;
+  background: var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--magenta);
+  transition: width 900ms linear;
+}
+
+.remaining {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--magenta);
+  font-variant-numeric: tabular-nums;
+}
+
+.expired .fill { background: var(--error); }
+.expired .remaining { color: var(--error); }
+
+/* ---------------------------------------------------------------- fields */
+
+.fields { margin: 0; }
+.field + .field { margin-top: 9px; }
+
+dt {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+dd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0 0;
+}
+
+code {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  background: var(--canvas);
+  border: 1px solid var(--line-soft);
+  border-radius: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+code.tok { color: var(--muted); }
+
+.actions {
+  display: flex;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+/* ---------------------------------------------------------------- states */
+
+.empty, .failure {
+  padding: 18px 16px 20px;
+  margin-bottom: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.empty p, .failure p { margin: 0 0 8px; color: var(--muted); }
+.empty p:last-child, .failure p:last-child { margin-bottom: 0; }
+.empty strong { color: var(--text); font-weight: 600; }
+
+.failure { border-left: 3px solid var(--error); }
+.failure .why { font-family: var(--mono); font-size: 11px; color: var(--error); }
+
+.stale { opacity: 0.5; }
+
+/* ---------------------------------------------------------------- toast */
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translate(-50%, 8px);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--paper);
+  background: var(--indigo);
+  border-radius: 5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0ms !important; }
+}
