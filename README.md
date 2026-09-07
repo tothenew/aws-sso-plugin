@@ -26,11 +26,13 @@ Clone the repo into a folder you will not delete or move — for example
 `~/tools` on macOS/Linux, or `C:\Users\<you>\tools` on Windows:
 
 ```bash
-git clone https://github.com/<your-org>/aws-sso-plugin.git ~/tools/aws-sso-plugin
+git clone https://github.com/tothenew/aws-sso-plugin.git ~/tools/aws-sso-plugin
 ```
 
 No `git`? Click **Code → Download ZIP** on the repo page and unzip it into that
 same kind of permanent folder.
+
+![The aws-sso-plugin folder sitting inside a tools folder in the home directory](docs/images/01-cloned-directory.png)
 
 **Why the folder matters.** Chrome loads the extension from this folder every
 time it starts — it does not copy the files. If you move the folder to the
@@ -50,10 +52,20 @@ That folder is the extension. Everything beside it in the repo is documentation
 and automated checks, which the browser has no use for.
 
 1. Open a new tab and go to `chrome://extensions`
-   *(Edge: `edge://extensions`)*
+   *(Edge: `edge://extensions`)*. You can also get there from the Chrome menu →
+   **Settings** → **Extensions**.
+
+   ![The Chrome settings sidebar with Extensions at the bottom](docs/images/02-chrome-extensions.png)
+
 2. Turn on **Developer mode** — the toggle in the top right
+
+   ![The Extensions page with Developer mode switched on, which reveals the Load unpacked button in the top left](docs/images/03-developer-mode.png)
+
 3. Click **Load unpacked** — button in the top left
+
 4. Select `aws-sso-plugin/extension` and confirm
+
+   ![The folder picker open on the aws-sso-plugin folder, showing the extension folder to select alongside README.md, CONTRIBUTING.md and LICENSE](docs/images/04-load-unpacked.png)
 
 Check you picked the right one: the folder you select should have
 `manifest.json` sitting directly inside it. If you see a `README.md` or a
@@ -62,10 +74,19 @@ Check you picked the right one: the folder you select should have
 A card titled **AWS STS Keys (Keycloak SSO)** appears. If you get an error
 instead, jump to [Troubleshooting](#troubleshooting).
 
+![The Extensions page showing the loaded AWS STS Keys card with its version number](docs/images/05-extension.png)
+
 ## Step 3 — Pin it to the toolbar
 
 Click the puzzle-piece icon to the right of the address bar, find **AWS STS
 Keys**, and click the pin next to it. The key icon now sits in your toolbar.
+
+![The extensions menu opened from the puzzle-piece icon, with the pin button next to AWS STS Keys](docs/images/06-pin.png)
+
+Clicking the pinned icon before you have signed in shows an empty popup — that
+is expected:
+
+![The extension popup reading No session captured, with a prompt to sign in to the AWS console](docs/images/07-plugin.png)
 
 ## Step 4 — Use it
 
