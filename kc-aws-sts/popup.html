@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <img class="mark" src="assets/mark.png" alt="" />
+        <div class="txt">
+          <span class="eyebrow">AWS STS Keys</span>
+          <h1 id="captured">No session captured</h1>
+        </div>
+      </div>
+      <button id="clear" class="ghost" hidden>Clear</button>
+    </header>
+
+    <main id="body"></main>
+
+    <template id="tpl-session">
+      <section class="card">
+        <div class="head">
+          <span class="role"></span>
+          <span class="account"></span>
+        </div>
+
+        <div class="life">
+          <div class="track"><div class="fill"></div></div>
+          <span class="remaining"></span>
+        </div>
+
+        <dl class="fields">
+          <div class="field">
+            <dt>Access key ID</dt>
+            <dd><code data-k="accessKeyId"></code>
+              <button class="copy" data-copy="accessKeyId" aria-label="Copy access key ID">Copy</button>
+            </dd>
+          </div>
+          <div class="field">
+            <dt>Secret access key</dt>
+            <dd><code data-k="secretAccessKey" data-masked="true"></code>
+              <button class="reveal" aria-label="Reveal secret access key">Show</button>
+              <button class="copy" data-copy="secretAccessKey" aria-label="Copy secret access key">Copy</button>
+            </dd>
+          </div>
+          <div class="field">
+            <dt>Session token</dt>
+            <dd><code class="tok" data-k="sessionToken"></code>
+              <button class="copy" data-copy="sessionToken" aria-label="Copy session token">Copy</button>
+            </dd>
+          </div>
+        </dl>
+
+        <div class="actions">
+          <button class="solid" data-copy="env">Copy shell exports</button>
+          <button class="solid alt" data-copy="profile">Copy profile block</button>
+        </div>
+      </section>
+    </template>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="popup.js"></script>
+  </body>
+</html>
