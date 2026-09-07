@@ -90,7 +90,7 @@ is expected:
 
 ## Step 4 — Use it
 
-1. Sign in to the AWS console through Keycloak, exactly as you normally do
+1. Sign in to the AWS console, exactly as you normally do
 2. A number appears on the extension icon — that's how many roles it captured
 3. Click the icon
 
