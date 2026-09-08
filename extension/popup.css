@@ -19,8 +19,10 @@
 
 * { box-sizing: border-box; }
 
+/* Wide enough that a role name fits
+   on one line beside its state label, rather than ellipsising. */
 body {
-  width: 404px;
+  width: 448px;
   margin: 0;
   padding: 0 0 12px;
   background: var(--canvas);
@@ -130,46 +132,172 @@ button:focus-visible {
 }
 .solid.alt:hover { background: var(--magenta-wash); color: var(--magenta-deep); }
 
-/* ---------------------------------------------------------------- card */
+/* ------------------------------------------------------- banner and filter */
 
-main { padding: 12px 12px 0; }
+.banner {
+  padding: 9px 16px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--magenta-wash);
+  border-bottom: 1px solid var(--line);
+}
 
-.card {
-  padding: 13px 14px 14px;
-  margin-bottom: 10px;
+.banner.warn {
+  color: var(--error);
+  background: #FFF4F6;
+}
+
+.tools {
+  padding: 10px 12px 0;
+}
+
+#filter {
+  width: 100%;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+#filter::placeholder { color: var(--muted); }
+
+#filter:focus-visible {
+  outline: 2px solid var(--magenta);
+  outline-offset: -1px;
+  border-color: var(--magenta);
+}
+
+/* ------------------------------------------------------------ account list */
+
+main {
+  padding: 12px 12px 0;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.acct {
+  margin-bottom: 7px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 8px;
+  overflow: hidden;
 }
 
-.head {
+.acct-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.acct-head:hover { background: var(--magenta-wash); }
+
+/* A CSS triangle, so no icon font or inline SVG is needed. */
+.chev {
+  flex: none;
+  width: 0;
+  height: 0;
+  border-left: 4.5px solid var(--muted);
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform 120ms ease;
+}
+
+.acct.open .chev { transform: rotate(90deg); }
+
+.acct-id {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.acct-count {
+  flex: none;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.live-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--magenta);
+}
+
+.acct-roles {
+  border-top: 1px solid var(--line-soft);
+}
+
+/* --------------------------------------------------------------- role rows */
+
+.role-row + .role-row { border-top: 1px solid var(--line-soft); }
+
+.role-btn {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 11px;
+  width: 100%;
+  padding: 9px 12px 9px 30px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
-.role {
+.role-btn:hover { background: var(--canvas); }
+
+.role-name {
+  min-width: 0;
   font-family: var(--mono);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 12px;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.account {
+.role-state {
   flex: none;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.03em;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.role-state.issued { color: var(--magenta); }
+
+.role-body { padding: 0 12px 12px 30px; }
+
+.role-body .failure { margin-bottom: 0; }
+
+.note {
+  margin: 0;
+  padding: 8px 0 2px;
+  font-size: 11.5px;
   color: var(--muted);
 }
 
 /* Expiry is the one fact that matters most about a temporary credential,
    so it carries the brand accent. */
+.creds { padding-top: 4px; }
+
 .life {
   display: flex;
   align-items: center;

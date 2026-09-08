@@ -16,15 +16,47 @@
       <button id="clear" class="ghost" hidden>Clear</button>
     </header>
 
+    <div id="banner" class="banner" role="status" hidden></div>
+
+    <div id="tools" class="tools" hidden>
+      <input
+        id="filter"
+        type="search"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Filter by account or role"
+        aria-label="Filter accounts and roles"
+      />
+    </div>
+
     <main id="body"></main>
 
-    <template id="tpl-session">
-      <section class="card">
-        <div class="head">
-          <span class="role"></span>
-          <span class="account"></span>
-        </div>
+    <!-- One collapsed group per AWS account. -->
+    <template id="tpl-account">
+      <section class="acct">
+        <button class="acct-head" type="button" aria-expanded="false">
+          <span class="chev" aria-hidden="true"></span>
+          <span class="acct-id"></span>
+          <span class="acct-count"></span>
+        </button>
+        <div class="acct-roles" hidden></div>
+      </section>
+    </template>
 
+    <!-- One row per role. Credentials are not requested until it is clicked. -->
+    <template id="tpl-role">
+      <div class="role-row">
+        <button class="role-btn" type="button" aria-expanded="false">
+          <span class="role-name"></span>
+          <span class="role-state"></span>
+        </button>
+        <div class="role-body" hidden></div>
+      </div>
+    </template>
+
+    <!-- The credential view, rendered into a role row only after minting. -->
+    <template id="tpl-creds">
+      <div class="creds">
         <div class="life">
           <div class="track"><div class="fill"></div></div>
           <span class="remaining"></span>
@@ -56,7 +88,7 @@
           <button class="solid" data-copy="env">Copy shell exports</button>
           <button class="solid alt" data-copy="profile">Copy profile block</button>
         </div>
-      </section>
+      </div>
     </template>
 
     <div id="toast" role="status" aria-live="polite"></div>

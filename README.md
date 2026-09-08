@@ -4,11 +4,12 @@ A Chrome/Edge extension that gives you AWS CLI credentials from the AWS console
 sign-in you already do.
 
 ```
-sign in to AWS console  →  click the toolbar icon  →  copy  →  done
+sign in to AWS console  →  pick an account  →  pick a role  →  copy  →  done
 ```
 
-Nothing runs in the background, nothing is written to disk, and the credentials
-disappear when you close the browser.
+Credentials are issued only for the role you pick, nothing runs in the
+background, nothing is written to disk, and everything disappears when you close
+the browser.
 
 ---
 
@@ -26,7 +27,7 @@ Clone the repo into a folder you will not delete or move — for example
 `~/tools` on macOS/Linux, or `C:\Users\<you>\tools` on Windows:
 
 ```bash
-git clone https://github.com/tothenew/aws-sso-plugin.git ~/tools/aws-sso-plugin
+git clone https://github.com/<your-org>/aws-sso-plugin.git ~/tools/aws-sso-plugin
 ```
 
 No `git`? Click **Code → Download ZIP** on the repo page and unzip it into that
@@ -90,13 +91,27 @@ is expected:
 
 ## Step 4 — Use it
 
-1. Sign in to the AWS console, exactly as you normally do
-2. A number appears on the extension icon — that's how many roles it captured
+1. Sign in to the AWS console through Keycloak, exactly as you normally do
+2. A number appears on the extension icon — that's how many roles you have
 3. Click the icon
 
-You'll see a card for each role you have, showing the account number, a
-countdown to expiry, and the three credential values. The secret is hidden
-until you click **Show**.
+You'll see every account you have access to, listed and collapsed. There's a
+filter box at the top if the list is long.
+
+4. Click an account to see your roles in it
+5. Click a role to get credentials for it
+
+Only then are credentials issued — for that one role. You get a countdown to
+expiry, the three values, and the copy buttons. The secret stays hidden until
+you click **Show**.
+
+Roles you've already used are marked **issued** and reopen instantly. Nothing is
+requested for accounts you never click.
+
+**If a role says the sign-in has expired:** sign in to the AWS console again.
+Credentials can only be issued for a few minutes after a sign-in, and because
+Keycloak already knows you, signing in again is just a redirect — no password.
+Anything already issued keeps working.
 
 **If you were already signed in to AWS before installing:** sign out and sign in
 again. The extension can only catch a sign-in that happens while it's running.
@@ -161,8 +176,10 @@ You should see your own email address in the returned ARN.
 ## What to expect
 
 - **Credentials last 4 hours.** When the countdown runs out, sign in to the AWS
-  console again and copy fresh ones. There is no automatic refresh — that's
+  console again and get fresh ones. There is no automatic refresh — that's
   deliberate.
+- **Only the roles you click get credentials.** Opening the popup and browsing
+  accounts issues nothing. Nothing is requested from AWS until you pick a role.
 - **They vanish when you quit the browser.** Nothing is written to disk by the
   extension. Reopening gives you an empty popup until you sign in again.
 
@@ -200,7 +217,9 @@ extension's card. Nothing else to do.
 | "Disable developer mode extensions" popup on startup | Normal for unpacked extensions | Click **Cancel** / **Keep**. Don't click Disable |
 | **Load unpacked** button missing or greyed out | Browser policy blocks it on your machine | Contact the Internal DevOps team — you'll need a different install method |
 | "Manifest file is missing or unreadable" | You selected the repo folder, not the extension folder | Repeat Step 2 and pick `aws-sso-plugin/extension` |
-| A red card says a role failed | That role isn't configured yet | Note the role name and report it |
+| A role shows an error instead of credentials | That role isn't configured yet, or its `MaxSessionDuration` is below the requested session length | Note the account and role name and report it |
+| Every role says the sign-in has expired | More than a few minutes have passed since you signed in | Sign in to the AWS console again — it's a redirect, not a login |
+| An account you expect isn't listed | It wasn't in your SAML assertion | Request access through the usual channel |
 | `ExpiredToken` from the CLI | The session ran out | Sign in again, copy fresh credentials |
 | `AccessDenied` from the CLI | Credentials are fine; the role lacks that permission | Normal — request access through the usual channel |
 | Popup shows nothing after signing in | Something's broken | Report it to the Internal DevOps team |
