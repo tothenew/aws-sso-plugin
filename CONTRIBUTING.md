@@ -1,75 +1,163 @@
 # Contributing
 
-When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change. 
+This extension reads AWS credentials. A change here can turn it into a
+credential exfiltration channel, so the process is stricter than the size of the
+codebase suggests. Read this before opening a PR.
 
-Please note we have a code of conduct, please follow it in all your interactions over the project.
+## Layout
 
-## Reporting Bugs
+```
+extension/           the only thing that reaches a user's browser
+  manifest.json      MV3 manifest, minimal permissions
+  background.js      interception, assertion parsing, STS exchange
+  popup.html/css/js  credential display, countdown, copy helpers
+  icons/ assets/     artwork
+README.md            install and use instructions for users
+CONTRIBUTING.md      this file
+LICENSE
+.github/             PR checks, security scanning, Dependabot
+```
 
-This section guides you through submitting a bug report for TTN. Following these guidelines helps maintainers and the community understand your report, reproduce the behavior, and find related reports.
+Users point *Load unpacked* at `extension/`, so anything outside it is free to
+change without touching what people have installed. The scanning steps in CI
+are scoped to `extension/` for the same reason.
 
-Before creating bug reports, please check this list as you might find out that you don't need to create one. When you are creating a bug report, please [include as many details as possible](#how-do-i-submit-a-good-bug-report). Fill out [the required template, the information it asks for helps us resolve issues faster.
+## Ground rules
 
+- **Nobody pushes to `main`.** Not maintainers, not admins. Every change is a
+  pull request with review.
+- **No dependencies.** No npm packages, no bundler, no vendored library, no
+  script pulled from a CDN. The extension is plain JavaScript against browser
+  and AWS APIs, and CI fails if that changes.
+- **Permissions never widen quietly.** `extension/manifest.json` is compared
+  against [.github/expected-permissions.json](.github/expected-permissions.json)
+  on every PR. Widening means editing both files, in the same PR, with a reason.
+- **No network destination but AWS STS.** CI extracts every `https://` literal
+  in `extension/` and fails on anything unapproved.
 
-#### How Do I Submit A (Good) Bug Report?
+## How to propose a change
 
-Bugs are tracked as [GitHub issues](https://guides.github.com/features/issues/). Create an issue on the repository and provide the following information by filling in the template.
+Maintainers: branch off `main` and open a PR — no direct pushes, including your
+own. Everyone else: fork, then open a PR from the fork. Write access is limited
+to the two maintainers.
 
-Explain the problem and include additional details to help maintainers reproduce the problem:
+1. Branch off `main` (or fork, then branch).
+2. Make the change. Bump `version` in `extension/manifest.json`.
+3. Test it for real — load `extension/` unpacked in Chrome, sign in through
+   Keycloak, confirm the credentials work with `aws sts get-caller-identity`.
+   CI cannot do any of this.
+4. Open a PR and fill in the template, including the security checklist.
 
-* **Use a clear and descriptive title** for the issue to identify the problem.
-* **Describe the exact steps which reproduce the problem** in as many details as possible. For example, start by explaining how you started the module, e.g. which command exactly you used in the terminal.
-* **Provide specific examples to demonstrate the steps**. Include links to files or GitHub projects, or copy/pasteable snippets, which you use in those examples. If you're providing snippets in the issue, use [Markdown code blocks](https://docs.github.com/pt/github/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks).
-* **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
-* **If the problem wasn't triggered by a specific action**, describe what you were doing before the problem happened and share more information using the guidelines below.
+Run the checks locally before pushing, from the repo root:
 
-Provide more context by answering these questions:
+```bash
+node .github/scripts/check-manifest.mjs extension
+find . -name '*.js' -o -name '*.mjs' | grep -v '^./.git/' | xargs -n1 node --check
+```
 
-* **Did the problem start happening recently** (e.g. after updating to a new version of Terraform) or was this always a problem?
-* If the problem started happening recently, **can you reproduce the problem in an older version of Terraform?** What's the most recent version in which the problem doesn't happen? You can download older versions of Terraform from [the releases page](https://github.com/hashicorp/terraform/releases).
-* **Can you reliably reproduce the issue?** If not, provide details about how often the problem happens and under which conditions it normally happens.
-* If the problem is related to working with files (e.g. opening and editing files), **does the problem happen for all files and projects or only some?** Does the problem happen only when working with local or remote files (e.g. on network drives), with files of a specific type (e.g. only JavaScript or Python files), with large files or files with very long lines, or with files in a specific encoding? Is there anything else special about the files you are using?
-### Suggesting Enhancements
+## What CI runs
 
-This section guides you through submitting an enhancement suggestion for TTN AWS modules, including completely new features and minor improvements to existing functionality. Following these guidelines helps maintainers and the community understand your suggestion and find related suggestions.
+`.github/workflows/pr-checks.yml`
 
-Before creating enhancement suggestions, please check issues as you might find out that you don't need to create one. When you are creating an enhancement suggestion, please include as many details as possible. Fill in the template, including the steps that you imagine you would take if the feature you're requesting existed.
+| Check | What it fails on |
+| --- | --- |
+| Manifest and permissions | invalid JSON anywhere in the repo; `extension/manifest.json` not Manifest V3; a missing icon or script the manifest points at; any permission drift from the approved list; broad scopes like `<all_urls>` |
+| JavaScript syntax | any `.js` / `.mjs` that doesn't parse |
+| No third-party or remote code | committed `node_modules` or a lockfile; `importScripts`, `eval`, `new Function`, or a CDN reference in `extension/`; an `https://` literal there pointing anywhere but the approved AWS hosts |
 
-#### How Do I Submit A (Good) Enhancement Suggestion?
+`.github/workflows/security.yml`
 
-Enhancement suggestions are tracked as [GitHub issues](https://guides.github.com/features/issues/). Create an issue on that repository and provide the following information:
+| Check | What it does |
+| --- | --- |
+| CodeQL | scans our JavaScript with the `security-extended` query set — injection, unsafe DOM writes, prototype pollution, unsafe regex. Also runs weekly, so new queries and advisories reach unchanged code. |
+| Dependency review | fails a PR that introduces a dependency with a moderate-or-worse advisory. A no-op while there are no dependencies. |
 
-* **Use a clear and descriptive title** for the issue to identify the suggestion.
-* **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
-* **Provide specific examples to demonstrate the steps**. Include copy/pasteable snippets which you use in those examples, as [Markdown code blocks](https://help.github.com/articles/markdown-basics/#multiple-lines).
-* **Describe the current behavior** and **explain which behavior you expected to see instead** and why.
-* **Include screenshots and animated GIFs** which help you demonstrate the steps or point out the part of code which the suggestion is related. You can use [this tool](https://www.cockos.com/licecap/) to record GIFs on macOS and Windows, and [this tool](https://github.com/colinkeenan/silentcast) or [this tool](https://gitlab.gnome.org/Archive/byzanz) on Linux.
-* **Explain why this enhancement would be useful** to most Terraform users and isn't something that can or should be implemented as a community package.
-* **Specify which version of Terraform you're using.** You can get the exact version by running `terraform -v` in your terminal.
-* **Specify the name and version of the OS you're using.**
+Dependabot keeps the GitHub Actions used by these workflows up to date.
 
+**Committed secrets are not a CI check here, on purpose.** GitHub's secret
+scanning with push protection catches them at push time, before they are public,
+which a CI check cannot do. Enabling it is step 3 below.
 
-## Pull Request Process
+---
 
-The process described here has several goals:
+## Repo settings a maintainer must configure
 
-- Fix problems that are important to users.
+**The workflows above cannot stop a direct push — only branch protection can.**
+Files in the repo are not enough. Set this up once, in the GitHub UI, or the
+"nobody makes changes" guarantee does not exist.
 
+### 1. Protect `main`
 
-1. Increase the version numbers in any examples files and the README.md to the new version that this
-   Pull Request would represent. The versioning scheme we use is [SemVer](http://semver.org/).
-3. You may merge the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
-4. Follow all instructions in [the template](./.github/pull_request_template.md).
-5. After you submit your pull request, verify that all [status checks](https://help.github.com/articles/about-status-checks/) are passing. <details><summary>What if the status checks are failing?</summary>If a status check is failing, and you believe that the failure is unrelated to your change, please leave a comment on the pull request explaining why you believe the failure is unrelated. A maintainer will re-run the status check for you. If we conclude that the failure was a false positive, then we will open an issue to track that problem with our status check suite.</details>
+*Settings → Branches → Add branch protection rule* (or *Rules → Rulesets*),
+branch name pattern `main`:
 
-While the prerequisites above must be satisfied prior to have your pull request reviewed, the reviewer(s) may ask you to complete additional design work, tests, or other changes before your pull request can be ultimately accepted.
+- [ ] Require a pull request before merging
+  - [ ] Require approvals: **1**
+  - [ ] Dismiss stale pull request approvals when new commits are pushed
 
-### Your First Code Contribution
+  Only the two maintainers have write access, and GitHub never lets you approve
+  your own PR — so *1 approval* already means "the other maintainer signed off".
+  That is why there is no CODEOWNERS file here; it would add a second layer
+  saying the same thing. Revisit that if the repo ever gains more collaborators
+  than the people you want gating changes.
 
-Unsure where to begin contributing to TTN? You can start by looking through these `beginner` and `help-wanted` issues:
+  Combined with *include administrators* below, the trade-off is real, so know
+  it going in: if one of you is away, the other cannot merge anything. Live with
+  it, or temporarily allow an admin bypass and say why in the PR.
+- [ ] Require status checks to pass before merging → *Require branches to be up
+      to date*, then add every check by name:
+      `Manifest and permissions`, `JavaScript syntax`,
+      `No third-party or remote code`, `CodeQL`, `Dependency review`
+      *(they only become selectable after the workflows have run once — open a
+      throwaway PR first, then come back)*
+- [ ] Require conversation resolution before merging
+- [ ] Require signed commits *(recommended — it ties each commit to a key, not
+      just to a display name)*
+- [ ] Do not allow bypassing the above settings — **include administrators**
+- [ ] Block force pushes
+- [ ] Restrict deletions
 
-* `beginner` - issues that should only require a few lines of code, and a test or two.
-* `help-wanted` - issues which should be a bit more involved than `beginner` issues.
+### 2. Lock down Actions
 
-Both issue lists are sorted by the total number of comments. While not perfect, the number of comments is a reasonable proxy for the impact a given change will have.
+*Settings → Actions → General*:
+
+- [ ] Allow only actions created by GitHub, plus the ones these workflows use
+- [ ] Workflow permissions: **Read repository contents**
+- [ ] Uncheck *Allow GitHub Actions to create and approve pull requests*
+- [ ] Require approval for **all** outside collaborators' workflow runs
+
+A pull request from a fork gets a read-only token and no secrets. That is the
+behaviour you want on a public repo — it means an untrusted PR can run the
+checks but cannot act on the repo.
+
+### 3. Turn on the scanning GitHub gives you free
+
+*Settings → Code security*:
+
+- [ ] Secret scanning
+- [ ] **Push protection** — this rejects a commit containing a live AWS key at
+      push time, before it is ever public. On a repo about AWS credentials, it
+      is the single highest-value switch on this page.
+- [ ] Private vulnerability reporting
+
+Leave **CodeQL default setup off** — `security.yml` in this repo is the advanced
+setup, and enabling both causes duplicate, conflicting analyses.
+
+### 4. Keep the collaborator list short
+
+*Settings → Collaborators*: the two maintainers, with **write**. Nobody else,
+and no one with admin who isn't a maintainer. The approval rule above is only as
+strong as this list — every extra person with write access is another possible
+approver.
+
+### 5. Before you make the repo public
+
+- [ ] Confirm the copyright line in [LICENSE](LICENSE) names the right legal
+      entity, and that legal is happy with MIT for company-owned code going
+      public. Forks persist after a repo is deleted, so this is effectively
+      irreversible once published.
+- [ ] Replace `<your-org>` in the README clone URL.
+- [ ] Check `git log -p` for anything that shouldn't be public. History is
+      published too, not just the current files.
+- [ ] Confirm the repo root is this folder. Nothing from a parent directory
+      should be inside it.
