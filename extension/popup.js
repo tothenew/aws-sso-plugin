@@ -17,6 +17,19 @@ const toastEl = document.getElementById("toast");
 const tplAccount = document.getElementById("tpl-account");
 const tplRole = document.getElementById("tpl-role");
 const tplCreds = document.getElementById("tpl-creds");
+const tplClients = document.getElementById("tpl-clients");
+const tplClientRow = document.getElementById("tpl-client-row");
+const K_FORM = "clientForm";
+/** "roles" (default) or "clients" (the switch-role view). Popup-local: resets on close. */
+let view = "roles";
+/**
+ * Switch-role form. `source` is the roleArn of the issued jump role whose
+ * "Switch role" button opened it; `lists` holds a separate list of client rows
+ * per jump role (roleArn -> rows), so readOnly and adminUser never share rows.
+ * Held in chrome.storage.session: memory only, gone when the browser closes.
+ */
+const emptyForm = () => ({ source: "", lists: {} });
+let form = emptyForm();
 
 // Show the filter box once scanning the list by eye stops being realistic.
 const FILTER_THRESHOLD = 8;
@@ -33,9 +46,11 @@ const shown = new Set();
 init();
 
 async function init() {
-  const bag = await chrome.storage.session.get(["session", "creds"]);
+  const bag = await chrome.storage.session.get(["session", "creds", K_FORM]);
   session = bag.session ?? null;
   creds = bag.creds ?? {};
+  const saved = bag[K_FORM];
+  form = saved?.lists ? saved : emptyForm();
   render();
 }
 
@@ -45,6 +60,8 @@ clearBtn.addEventListener("click", async () => {
   creds = {};
   opened.clear();
   shown.clear();
+  form = emptyForm();
+  view = "roles";
   render();
 });
 
@@ -77,6 +94,21 @@ function render() {
 
   const roles = session.roles ?? [];
   const groups = groupByAccount(roles);
+
+  // Switch role is only offered from a role with issued credentials: the CLI
+  // needs them as the source profile, and they carry the session name.
+  if (view === "clients") {
+    const src = sourceRole();
+    if (src && isLive(creds[src.roleArn])) {
+      capturedEl.textContent = `Switch role · ${src.roleName}`;
+      toolsEl.hidden = true;
+      bannerEl.hidden = true;
+      bodyEl.append(clientsView(src));
+      refreshPreview();
+      return;
+    }
+    view = "roles";
+  }
 
   capturedEl.textContent =
     `${count(roles.length, "role")} in ${count(groups.length, "account")}` +
@@ -269,6 +301,13 @@ function credentials(c) {
     btn.addEventListener("click", () => copy(btn.dataset.copy, c));
   }
 
+  el.querySelector(".switch").addEventListener("click", () => {
+    form.source = c.roleArn;
+    saveForm();
+    view = "clients";
+    render();
+  });
+
   return el;
 }
 
@@ -355,6 +394,224 @@ function isLive(c) {
   if (!c?.ok) return false;
   const at = Date.parse(c.expiration ?? "");
   return !Number.isFinite(at) || at > Date.now();
+}
+
+// ----------------------------------------------------------- client profiles
+
+/**
+ * Each value ends up inside an INI file the user pastes by hand, so these are
+ * strict on purpose: a newline or "[" in any field could inject extra settings.
+ */
+const RULES = {
+  name: /^[A-Za-z0-9_.-]{1,64}$/,
+  accountId: /^\d{12}$/,
+  roleName: /^[\w+=,.@-]+(\/[\w+=,.@-]+)*$/, // allows a path, e.g. team/DevOps
+  region: /^[a-z]{2}(-gov|-iso[a-z]?)?-[a-z]+-\d$/,
+};
+
+const blankRow = () => ({ name: "", accountId: "", roleName: "", region: "" });
+
+/** The client rows for the jump role currently open in the switch-role view. */
+function currentRows() {
+  return (form.lists[form.source] ??= []);
+}
+
+function saveForm() {
+  chrome.storage.session.set({ [K_FORM]: form });
+}
+
+function clientsView(src) {
+  const el = tplClients.content.firstElementChild.cloneNode(true);
+
+  el.querySelector(".back").addEventListener("click", () => {
+    view = "roles";
+    render();
+  });
+  el.querySelector(".src-name").textContent = sourceProfileName(src);
+  el.querySelector(".src-session").textContent = sessionName(src) ?? "unknown";
+
+  const rowsEl = el.querySelector("#crows");
+  const rows = currentRows();
+  if (!rows.length) rows.push(blankRow());
+  for (const r of rows) rowsEl.append(clientRow(r));
+
+  el.querySelector("#add-row").addEventListener("click", () => {
+    const r = blankRow();
+    currentRows().push(r);
+    const rowEl = clientRow(r);
+    rowsEl.append(rowEl);
+    rowEl.querySelector("input").focus();
+    changed();
+  });
+
+  el.querySelector("#copy-config").addEventListener("click", copyConfig);
+  return el;
+}
+
+function clientRow(r) {
+  const el = tplClientRow.content.firstElementChild.cloneNode(true);
+  el._row = r;
+  for (const input of el.querySelectorAll("input[data-f]")) {
+    input.value = r[input.dataset.f] ?? "";
+    input.addEventListener("input", () => {
+      r[input.dataset.f] = input.value;
+      changed();
+    });
+  }
+  el.querySelector(".remove").addEventListener("click", () => {
+    const rows = currentRows();
+    rows.splice(rows.indexOf(r), 1);
+    el.remove();
+    changed();
+  });
+  return el;
+}
+
+function changed() {
+  saveForm();
+  refreshPreview();
+}
+
+function sourceRole() {
+  return session?.roles?.find((r) => r.roleArn === form.source) ?? null;
+}
+
+/** Same name "Copy profile block" writes, so the two files line up. */
+function sourceProfileName(src) {
+  return `${src.accountId}-${src.roleName}`;
+}
+
+/**
+ * The user's own session name (their email or username, as Keycloak set it),
+ * read from the jump role's issued credentials:
+ *   arn:aws:sts::123456789012:assumed-role/JumpRole/<session name>
+ * Reused as role_session_name so the client account's CloudTrail shows who
+ * switched in. Returns null if it can't be read or isn't a valid session name.
+ */
+function sessionName(src) {
+  const arn = creds[src.roleArn]?.assumedRoleArn ?? "";
+  const m = arn.match(/:assumed-role\/[^/]+\/(.+)$/);
+  return m && /^[\w+=,.@-]{2,64}$/.test(m[1]) ? m[1] : null;
+}
+
+/**
+ * Profile names this list must not reuse: every name entered under another
+ * jump role (both blocks end up in the same ~/.aws/config, where a repeated
+ * name silently overrides), and every jump role's own credentials profile name.
+ */
+function reservedNames() {
+  const names = new Set((session?.roles ?? []).map(sourceProfileName));
+  for (const [source, rows] of Object.entries(form.lists)) {
+    if (source === form.source) continue;
+    for (const r of rows) {
+      const name = (r.name ?? "").trim();
+      if (name) names.add(name);
+    }
+  }
+  return names;
+}
+
+/** Field names that are wrong in a row ("name" also covers duplicates). */
+function rowProblems(r, takenNames) {
+  const bad = [];
+  for (const [k, re] of Object.entries(RULES)) {
+    if (!re.test((r[k] ?? "").trim())) bad.push(k);
+  }
+  const name = (r.name ?? "").trim();
+  if (name && takenNames.has(name)) bad.push("dup");
+  return bad;
+}
+
+/** What to tell the user when a typed field is wrong. */
+const HINTS = {
+  name: "Profile name can only use letters, numbers, - _ and .",
+  accountId: "Account ID must be exactly 12 digits.",
+  roleName: "Role name has characters IAM doesn't allow.",
+  region: "Region should look like ap-south-1.",
+};
+
+function trimmed(row) {
+  return Object.fromEntries(Object.entries(row).map(([k, v]) => [k, (v ?? "").trim()]));
+}
+
+function configBlock() {
+  const src = sourceRole();
+  const who = src && sessionName(src);
+  if (!who) return "";
+  const partition = src.roleArn.split(":")[1]; // aws, aws-cn, aws-us-gov
+  const srcName = sourceProfileName(src);
+  const taken = reservedNames();
+  const out = [];
+
+  for (const r of currentRows().map(trimmed)) {
+    if (rowProblems(r, taken).length) continue;
+    taken.add(r.name);
+    out.push(
+      `[profile ${r.name}]`,
+      `role_arn = arn:${partition}:iam::${r.accountId}:role/${r.roleName}`,
+      `source_profile = ${srcName}`,
+      `role_session_name = ${who}`,
+      `region = ${r.region}`,
+      ""
+    );
+  }
+  return out.join("\n");
+}
+
+function refreshPreview() {
+  const preview = document.getElementById("preview");
+  if (!preview) return;
+
+  // Highlight bad fields, but leave empty required ones alone until something is typed.
+  const src = sourceRole();
+  const taken = reservedNames();
+  for (const rowEl of document.querySelectorAll(".crow")) {
+    const r = trimmed(rowEl._row);
+    const bad = new Set(rowProblems(r, taken));
+    if (!bad.size) taken.add(r.name);
+
+    const msgs = [];
+    for (const input of rowEl.querySelectorAll("input[data-f]")) {
+      const k = input.dataset.f;
+      if (input.value.trim() === "") {
+        input.classList.remove("bad");
+        continue;
+      }
+      const dup = k === "name" && bad.has("dup") && !bad.has("name");
+      const wrong = bad.has(k) || dup;
+      input.classList.toggle("bad", wrong);
+      if (dup) {
+        msgs.push(`Profile name "${r.name}" is already used. Names must be unique across all jump roles.`);
+      } else if (wrong) {
+        msgs.push(HINTS[k]);
+      }
+    }
+    const err = rowEl.querySelector(".crow-err");
+    err.textContent = msgs.join(" ");
+    err.hidden = !msgs.length;
+  }
+
+  const text = configBlock();
+  preview.textContent =
+    text ||
+    (src && !sessionName(src)
+      ? "Could not read your session name from this role's credentials. Clear, sign in again, and reissue them."
+      : "Fill in a client row to see the config block.");
+  preview.classList.toggle("empty-preview", !text);
+}
+
+async function copyConfig() {
+  const text = configBlock();
+  if (!text) {
+    toast("Nothing valid to copy yet");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Config block copied");
+  } catch {
+    toast("Clipboard blocked by Chrome");
+  }
 }
 
 // -------------------------------------------------------------------- copy

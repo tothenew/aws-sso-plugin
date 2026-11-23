@@ -163,19 +163,44 @@ aws s3 ls --profile 123456789012-PlatformAdmin
 Replace the old block when you refresh, rather than adding a second one with
 the same name.
 
+### Switch Role
+
+To switch to an AWS account using the AWS CLI:
+
+1. Obtain your **base credentials** and click **Copy profile block**.
+   Paste it into `~/.aws/credentials` (replace it each time you refresh).
+2. In the same credentials panel, click **Switch role** and add a row for each target AWS Account.
+   Provide the profile name, account ID, IAM role name, and AWS region.
+3. Click **Copy config block** and paste it into `~/.aws/config`. This
+   configuration only needs to be added once per target account.
+
+Each profile includes your session name (email or username), allowing the target AWS account to identify who assumed the role through AWS CloudTrail.
+
+```bash
+aws sts get-caller-identity --profile client-acme
+```
+
+The AWS CLI automatically assumes the configured role and obtains temporary credentials for the target account. The assumed-role session is valid for up to 1 hour, subject to the IAM role's configured maximum session duration and AWS STS limits.
+
+As long as your base credentials remain valid, the AWS CLI can automatically renew the assumed-role session when required.
+
+When your base credentials expire, refresh them using the same process. Your existing target account profiles do not need to be modified.
+
+**Note**: The browser extension does not persist your configured target account list after the browser is closed.
+
 ### Check it worked
 
 ```bash
 aws sts get-caller-identity
 ```
 
-You should see your own email address in the returned ARN.
+You should see your own identity reflected in the returned ARN, confirming that you are authenticated with your base AWS credentials.
 
 ---
 
 ## What to expect
 
-- **Credentials last 4 hours.** When the countdown runs out, sign in to the AWS
+- **Credentials last 8 hours.** When the countdown runs out, sign in to the AWS
   console again and get fresh ones. There is no automatic refresh — that's
   deliberate.
 - **Only the roles you click get credentials.** Opening the popup and browsing

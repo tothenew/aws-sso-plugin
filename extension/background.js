@@ -273,7 +273,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, respond) => {
 
   if (msg?.type === "clear") {
     chrome.storage.session
-      .remove([K_SESSION, K_CREDS])
+      .remove([K_SESSION, K_CREDS, "clientForm"])
       .then(() => setBadge(0))
       .then(() => respond({ ok: true }));
     return true;
