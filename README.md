@@ -163,30 +163,30 @@ aws s3 ls --profile 123456789012-PlatformAdmin
 Replace the old block when you refresh, rather than adding a second one with
 the same name.
 
-### Client accounts (switch role from the jump account)
+### Switch Role
 
-Your sign-in only covers the jump account. To use a client account from the
-CLI, let the CLI do the role switch for you:
+To switch to an AWS account using the AWS CLI:
 
-1. Get credentials for your **jump role** and click **Copy profile block**.
+1. Obtain your **base credentials** and click **Copy profile block**.
    Paste it into `~/.aws/credentials` (replace it each time you refresh).
-2. In the same credentials panel, click **Switch role** and add a row per
-   client: profile name, account ID, role name and region.
-3. Click **Copy config block** and paste it into `~/.aws/config`. You only need
-   to do this once per client — it contains no secrets. Each profile carries
-   your own session name (your email or username), so the client account's
-   CloudTrail shows who switched in.
+2. In the same credentials panel, click **Switch role** and add a row for each target AWS Account.
+   Provide the profile name, account ID, IAM role name, and AWS region.
+3. Click **Copy config block** and paste it into `~/.aws/config`. This
+   configuration only needs to be added once per target account.
+
+Each profile includes your session name (email or username), allowing the target AWS account to identify who assumed the role through AWS CloudTrail.
 
 ```bash
 aws sts get-caller-identity --profile client-acme
 ```
 
-The CLI switches into the client role for you and renews that session (1 hour,
-an AWS limit for switched roles) on its own while the jump credentials are
-valid. When the jump credentials expire, refresh them as usual — the client
-profiles keep working without changes.
+The AWS CLI automatically assumes the configured role and obtains temporary credentials for the target account. The assumed-role session is valid for up to 1 hour, subject to the IAM role's configured maximum session duration and AWS STS limits.
 
-The extension doesn't remember your client list after you close the browser.
+As long as your base credentials remain valid, the AWS CLI can automatically renew the assumed-role session when required.
+
+When your base credentials expire, refresh them using the same process. Your existing target account profiles do not need to be modified.
+
+**Note**: The browser extension does not persist your configured target account list after the browser is closed.
 
 ### Check it worked
 
@@ -194,13 +194,13 @@ The extension doesn't remember your client list after you close the browser.
 aws sts get-caller-identity
 ```
 
-You should see your own email address in the returned ARN.
+You should see your own identity reflected in the returned ARN, confirming that you are authenticated with your base AWS credentials.
 
 ---
 
 ## What to expect
 
-- **Credentials last 4 hours.** When the countdown runs out, sign in to the AWS
+- **Credentials last 8 hours.** When the countdown runs out, sign in to the AWS
   console again and get fresh ones. There is no automatic refresh — that's
   deliberate.
 - **Only the roles you click get credentials.** Opening the popup and browsing
