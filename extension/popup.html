@@ -87,8 +87,48 @@
         <div class="actions">
           <button class="solid" data-copy="env">Copy shell exports</button>
           <button class="solid alt" data-copy="profile">Copy profile block</button>
+          <button class="solid alt switch">Switch role</button>
         </div>
       </div>
+    </template>
+
+    <!-- Switch role view: generates ~/.aws/config blocks that chain off an issued jump role. -->
+    <template id="tpl-clients">
+      <div class="clients">
+        <button type="button" class="ghost back">← Back</button>
+        <dl class="src">
+          <div><dt>Source profile</dt><dd><code class="src-name"></code></dd></div>
+          <div><dt>Session name</dt><dd><code class="src-session"></code></dd></div>
+        </dl>
+        <div id="crows"></div>
+        <button type="button" class="ghost" id="add-row">+ Add client</button>
+        <pre id="preview" class="preview"></pre>
+        <div class="actions">
+          <button class="solid" id="copy-config">Copy config block</button>
+        </div>
+        <p class="note">
+          Paste into ~/.aws/config once. Keep this role's credentials in
+          ~/.aws/credentials with "Copy profile block" as usual.
+        </p>
+      </div>
+    </template>
+
+    <!-- One client account row in the client profiles view. -->
+    <template id="tpl-client-row">
+      <fieldset class="crow">
+        <div class="crow-grid">
+          <label><span class="lbl">Profile name</span>
+            <input data-f="name" placeholder="client-acme" autocomplete="off" spellcheck="false" /></label>
+          <label><span class="lbl">Account ID</span>
+            <input data-f="accountId" placeholder="111122223333" inputmode="numeric" maxlength="12" autocomplete="off" spellcheck="false" /></label>
+          <label><span class="lbl">Role name</span>
+            <input data-f="roleName" placeholder="DevOpsAccess" autocomplete="off" spellcheck="false" /></label>
+          <label><span class="lbl">Region</span>
+            <input data-f="region" placeholder="ap-south-1" autocomplete="off" spellcheck="false" /></label>
+        </div>
+        <p class="crow-err" role="alert" hidden></p>
+        <button type="button" class="ghost remove">Remove</button>
+      </fieldset>
     </template>
 
     <div id="toast" role="status" aria-live="polite"></div>

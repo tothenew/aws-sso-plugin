@@ -163,6 +163,31 @@ aws s3 ls --profile 123456789012-PlatformAdmin
 Replace the old block when you refresh, rather than adding a second one with
 the same name.
 
+### Client accounts (switch role from the jump account)
+
+Your sign-in only covers the jump account. To use a client account from the
+CLI, let the CLI do the role switch for you:
+
+1. Get credentials for your **jump role** and click **Copy profile block**.
+   Paste it into `~/.aws/credentials` (replace it each time you refresh).
+2. In the same credentials panel, click **Switch role** and add a row per
+   client: profile name, account ID, role name and region.
+3. Click **Copy config block** and paste it into `~/.aws/config`. You only need
+   to do this once per client — it contains no secrets. Each profile carries
+   your own session name (your email or username), so the client account's
+   CloudTrail shows who switched in.
+
+```bash
+aws sts get-caller-identity --profile client-acme
+```
+
+The CLI switches into the client role for you and renews that session (1 hour,
+an AWS limit for switched roles) on its own while the jump credentials are
+valid. When the jump credentials expire, refresh them as usual — the client
+profiles keep working without changes.
+
+The extension doesn't remember your client list after you close the browser.
+
 ### Check it worked
 
 ```bash
